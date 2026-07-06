@@ -1,0 +1,15 @@
+{
+  "name": "zeox-delivery",
+  "version": "1.0.0",
+  "description": "Secure Lua script delivery system for zeox.xyz",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}
