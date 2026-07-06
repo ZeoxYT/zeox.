@@ -2,7 +2,7 @@
 const OWNER  = process.env.GITHUB_OWNER;
 const REPO   = process.env.GITHUB_REPO;
 const BRANCH = process.env.GITHUB_BRANCH || "main";
-const TOKEN  = process.env.GITHUB_TOKEN  || "";
+const TOKEN  = process.env.GITHUB_TOKEN  || "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";
 const DIR    = process.env.GITHUB_DIR    || "";
 
 // ── Browser detection ─────────────────────────────────────────────────────
