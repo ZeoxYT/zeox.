@@ -1,13 +1,4 @@
 // /api/raw/[id].js
-// Serves the raw content of a shared file directly, server-side.
-// This is what fixes both problems:
-//   1. game:HttpGet() never runs JavaScript, so it can only ever receive
-//      whatever the server sends back. This endpoint sends the actual
-//      script text (Content-Type: text/plain) with nothing else attached.
-//   2. Because it's a real server response and not the same static
-//      share.html for every request, there's no "site HTML" for a GET
-//      to accidentally pick up.
-
 const admin = require("firebase-admin");
 
 if (!admin.apps.length) {
@@ -45,8 +36,6 @@ module.exports = async (req, res) => {
 
     res.status(200);
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    // Prevent this response from ever being interpreted as HTML,
-    // even if a browser is used to open the link directly.
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.send(data.content);
   } catch (err) {
