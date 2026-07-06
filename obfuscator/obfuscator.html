@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zeox Obfuscator — Lua Script Encryption</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root {
+    --bg: #070707;
+    --bg-2: #0e0e0e;
+    --surface: #131313;
+    --surface-2: #181818;
+    --surface-3: #1e1e1e;
+    --line: rgba(255,255,255,0.09);
+    --line-soft: rgba(255,255,255,0.05);
+    --text: #f5f5f5;
+    --text-dim: #9a9a9a;
+    --text-faint: #5e5e5e;
+    --white: #ffffff;
+    --radius: 16px;
+    --green: #7bd88f;
+    --red: #ff5b5b;
+    --yellow: #f7c948;
+    --accent: rgba(255,255,255,0.06);
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1,h2,h3 { font-family:'Space Grotesk',sans-serif; letter-spacing:-0.02em; }
+  code, pre, textarea, .mono { font-family:'JetBrains Mono',monospace; }
+  a { color:inherit; text-decoration:none; }
+
+  /* ── scrollbar ── */
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:99px; }
+  ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.22); }
+
+  /* ── header ── */
+  header {
+    position: sticky; top:0; z-index:50;
+    background: rgba(7,7,7,0.82);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 32px; max-width:1280px; margin:0 auto;
+  }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:600; font-size:17px; }
+  .brand img { width:28px; height:28px; border-radius:7px; object-fit:cover; }
+  .brand .logo-fallback {
+    width:28px; height:28px; border-radius:7px; background:var(--white);
+    display:flex; align-items:center; justify-content:center; color:#000; font-size:13px;
+  }
+  .nav-links { display:flex; gap:28px; font-size:14px; color:var(--text-dim); }
+  .nav-links a:hover { color:var(--white); transition:color .15s; }
+  .nav-actions { display:flex; align-items:center; gap:10px; }
+  .btn {
+    display:inline-flex; align-items:center; gap:7px;
+    padding:9px 18px; border-radius:999px; font-size:13.5px; font-weight:500;
+    border:1px solid var(--line); cursor:pointer; transition:all .18s ease;
+    white-space:nowrap; font-family:'Inter',sans-serif; background:none;
+  }
+  .btn-ghost { background:transparent; color:var(--text); }
+  .btn-ghost:hover { background:var(--surface); }
+  .btn-solid { background:var(--white); color:#0a0a0a; border-color:var(--white); }
+  .btn-solid:hover { background:#e4e4e4; }
+  .badge {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 13px; border-radius:999px; border:1px solid var(--line);
+    background:var(--surface); font-size:12px; color:var(--text-dim);
+  }
+
+  /* ── layout ── */
+  .page { max-width:1280px; margin:0 auto; padding:40px 32px 80px; }
+
+  /* ── page header ── */
+  .page-head { margin-bottom:36px; }
+  .page-head .badge { margin-bottom:18px; }
+  .page-head h1 { font-size:36px; font-weight:600; margin-bottom:10px; }
+  .page-head h1 .accent {
+    background:linear-gradient(180deg,#fff,#7a7a7a);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .page-head p { color:var(--text-dim); font-size:15px; line-height:1.6; max-width:540px; }
+
+  /* ── main grid ── */
+  .editor-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    align-items:start;
+  }
+  @media(max-width:860px) {
+    .editor-grid { grid-template-columns:1fr; }
+    .page { padding:28px 18px 60px; }
+    .nav { padding:14px 18px; }
+    .nav-links { display:none; }
+    .page-head h1 { font-size:26px; }
+  }
+
+  /* ── panel ── */
+  .panel {
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .panel-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px;
+    border-bottom:1px solid var(--line-soft);
+    background:var(--surface-2);
+    flex-shrink:0;
+  }
+  .panel-title {
+    display:flex; align-items:center; gap:9px;
+    font-size:13px; font-weight:500; color:var(--text-dim);
+  }
+  .panel-title i { font-size:12px; }
+  .panel-title span { color:var(--text); font-weight:600; }
+  .panel-actions { display:flex; align-items:center; gap:8px; }
+
+  .icon-btn {
+    width:30px; height:30px; border-radius:8px;
+    background:transparent; border:1px solid var(--line);
+    color:var(--text-dim); font-size:12px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:all .15s; font-family:inherit;
+  }
+  .icon-btn:hover { background:var(--surface-3); color:var(--white); border-color:rgba(255,255,255,0.2); }
+
+  /* ── code editor area ── */
+  .code-area {
+    width:100%; min-height:340px;
+    background:transparent; border:none; outline:none; resize:none;
+    color:var(--text); font-size:13px; line-height:1.75;
+    padding:18px; tab-size:2;
+    flex:1;
+  }
+  .code-area::placeholder { color:var(--text-faint); }
+
+  /* ── line numbers wrapper ── */
+  .editor-wrap {
+    display:flex; flex:1; overflow:hidden; position:relative;
+  }
+  .line-nums {
+    padding:18px 12px 18px 14px;
+    font-size:13px; line-height:1.75;
+    color:var(--text-faint); text-align:right;
+    user-select:none; background:transparent;
+    min-width:44px; flex-shrink:0; pointer-events:none;
+    white-space:pre;
+  }
+
+  /* ── output area ── */
+  .output-pre {
+    flex:1; min-height:340px;
+    padding:18px; overflow:auto;
+    font-size:13px; line-height:1.75; color:#d4d4d4;
+    white-space:pre-wrap; word-break:break-all;
+  }
+  .output-placeholder {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:340px; gap:14px; color:var(--text-faint);
+    font-size:13.5px;
+  }
+  .output-placeholder i { font-size:32px; opacity:.35; }
+
+  /* ── settings panel ── */
+  .settings-panel {
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:22px;
+    margin-bottom:20px;
+  }
+  .settings-title {
+    font-size:13px; font-weight:600; color:var(--text-dim);
+    margin-bottom:18px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .settings-title i { font-size:12px; }
+  .settings-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:12px;
+  }
+  @media(max-width:700px) { .settings-grid { grid-template-columns:1fr 1fr; } }
+
+  .toggle-item {
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--surface-2); border:1px solid var(--line-soft);
+    border-radius:10px; padding:11px 13px; gap:10px;
+    transition:border-color .15s;
+  }
+  .toggle-item:hover { border-color:var(--line); }
+  .toggle-label { font-size:12.5px; color:var(--text-dim); user-select:none; flex:1; line-height:1.35; }
+  .toggle-label strong { display:block; color:var(--text); font-size:12.5px; font-weight:500; }
+
+  .toggle-switch {
+    position:relative; width:36px; height:20px; flex-shrink:0; cursor:pointer;
+  }
+  .toggle-switch input { opacity:0; width:0; height:0; position:absolute; }
+  .slider {
+    position:absolute; inset:0; background:var(--surface-3);
+    border:1px solid var(--line); border-radius:99px; transition:all .2s;
+  }
+  .slider::before {
+    content:''; position:absolute;
+    width:13px; height:13px; top:2.5px; left:2.5px;
+    background:var(--text-faint); border-radius:50%;
+    transition:all .2s;
+  }
+  .toggle-switch input:checked + .slider { background:var(--white); border-color:var(--white); }
+  .toggle-switch input:checked + .slider::before { background:#0a0a0a; transform:translateX(16px); }
+
+  /* generator select */
+  .select-item {
+    background:var(--surface-2); border:1px solid var(--line-soft);
+    border-radius:10px; padding:11px 13px;
+    display:flex; align-items:center; gap:10px;
+    grid-column:span 1;
+  }
+  .select-item select {
+    background:transparent; border:none; outline:none;
+    color:var(--text); font-size:12.5px; font-family:'Inter',sans-serif;
+    cursor:pointer; flex:1; appearance:none;
+  }
+  .select-item .select-label { font-size:12.5px; color:var(--text-dim); white-space:nowrap; }
+
+  /* ── upload zone ── */
+  .upload-zone {
+    border:1.5px dashed var(--line);
+    border-radius:12px; padding:16px 18px;
+    display:flex; align-items:center; gap:12px;
+    color:var(--text-dim); font-size:13px;
+    cursor:pointer; transition:all .18s;
+    background:var(--surface-2);
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color:rgba(255,255,255,0.28); background:var(--surface-3); color:var(--white); }
+  .upload-zone i { font-size:16px; opacity:.7; flex-shrink:0; }
+  .upload-zone .upload-text { flex:1; }
+  .upload-zone .upload-text small { display:block; font-size:11.5px; color:var(--text-faint); margin-top:2px; }
+  #file-input { display:none; }
+  .file-tag {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--surface-3); border:1px solid var(--line);
+    border-radius:7px; padding:4px 10px; font-size:12px; color:var(--text-dim);
+  }
+  .file-tag .rm { cursor:pointer; color:var(--text-faint); }
+  .file-tag .rm:hover { color:var(--red); }
+
+  /* ── encrypt button ── */
+  .encrypt-btn {
+    width:100%; padding:14px; border-radius:12px;
+    background:var(--white); color:#0a0a0a;
+    font-size:15px; font-weight:600; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    font-family:'Inter',sans-serif; transition:background .18s;
+    margin-top:4px;
+  }
+  .encrypt-btn:hover { background:#e4e4e4; }
+  .encrypt-btn:disabled { opacity:.45; cursor:not-allowed; }
+  .encrypt-btn.loading .btn-text { display:none; }
+  .encrypt-btn .btn-spinner { display:none; }
+  .encrypt-btn.loading .btn-spinner { display:block; }
+
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .spinner-ring {
+    width:18px; height:18px;
+    border:2.5px solid rgba(0,0,0,0.2); border-top-color:#0a0a0a;
+    border-radius:50%; animation:spin .7s linear infinite;
+  }
+
+  /* ── status bar ── */
+  .status-bar {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 18px; border-top:1px solid var(--line-soft);
+    font-size:12px; color:var(--text-faint); flex-shrink:0;
+    background:var(--surface-2);
+  }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:var(--text-faint); flex-shrink:0; }
+  .status-dot.ok { background:var(--green); box-shadow:0 0 6px rgba(123,216,143,.5); }
+  .status-dot.err { background:var(--red); box-shadow:0 0 6px rgba(255,91,91,.5); }
+  .status-dot.busy { background:var(--yellow); animation:pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+  .status-right { margin-left:auto; display:flex; align-items:center; gap:12px; }
+  .char-count { font-size:12px; color:var(--text-faint); }
+
+  /* ── alert ── */
+  .alert {
+    border-radius:10px; padding:11px 14px; font-size:13px;
+    display:flex; align-items:flex-start; gap:9px; margin-bottom:16px;
+  }
+  .alert-err { background:rgba(255,91,91,.1); border:1px solid rgba(255,91,91,.25); color:#ff8f8f; }
+  .alert-ok  { background:rgba(123,216,143,.1); border:1px solid rgba(123,216,143,.25); color:#7bd88f; }
+  .alert i { margin-top:1px; flex-shrink:0; }
+
+  /* ── download row ── */
+  .download-row {
+    display:flex; align-items:center; gap:10px;
+    padding:14px 18px; border-top:1px solid var(--line-soft);
+    background:var(--surface-2); flex-shrink:0;
+  }
+  .download-name {
+    flex:1; font-size:12.5px; color:var(--text-dim);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .download-btn {
+    display:inline-flex; align-items:center; gap:7px;
+    padding:8px 16px; border-radius:999px;
+    background:var(--white); color:#0a0a0a;
+    font-size:13px; font-weight:600; border:none; cursor:pointer;
+    font-family:'Inter',sans-serif; transition:background .15s; white-space:nowrap;
+  }
+  .download-btn:hover { background:#e4e4e4; }
+
+  /* ── footer ── */
+  footer {
+    border-top:1px solid var(--line-soft);
+    padding:28px 32px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:14px;
+    font-size:12.5px; color:var(--text-faint);
+  }
+  .foot-links { display:flex; gap:20px; }
+  .foot-links a:hover { color:var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="nav">
+    <a href="index.html" class="brand">
+      <img src="https://cdn.discordapp.com/attachments/1517899652844752906/1523469630822154240/20_20260706022411.png?ex=6a4c3928&is=6a4ae7a8&hm=35fc4505b3f9d7be336806c812003a40f71da9e9e7a638ac4e21ed4a995848ce&"
+           alt="Zeox logo"
+           onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',innerHTML:'<i class=\'fa-solid fa-lock\'></i>'}))">
+      Zeox.xyz
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#features">Features</a>
+      <a href="index.html#security">Security</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="index.html#faq">FAQ</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="index.html" class="btn btn-ghost"><i class="fa-solid fa-house"></i> Home</a>
+    </div>
+  </div>
+</header>
+
+<!-- ── PAGE BODY ── -->
+<main class="page">
+
+  <!-- page header -->
+  <div class="page-head">
+    <div class="badge"><i class="fa-solid fa-shield-halved"></i> Zeox Obfuscator</div>
+    <h1>Protect Your <span class="accent">Lua Scripts</span></h1>
+    <p>Paste your code or upload a .lua file. Hit Encrypt and get a fully obfuscated script in seconds — no account needed to try.</p>
+  </div>
+
+  <!-- alert zone -->
+  <div id="alert-zone"></div>
+
+  <!-- settings -->
+  <div class="settings-panel">
+    <div class="settings-title"><i class="fa-solid fa-sliders"></i> Obfuscation Settings</div>
+    <div class="settings-grid">
+      <label class="toggle-item">
+        <div class="toggle-label">
+          <strong>Encode Numbers</strong>
+          Obfuscate numeric literals
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="opt-encodeNumbers" checked>
+          <span class="slider"></span>
+        </label>
+      </label>
+      <label class="toggle-item">
+        <div class="toggle-label">
+          <strong>Rename Globals</strong>
+          Scramble global names
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="opt-renameGlobals">
+          <span class="slider"></span>
+        </label>
+      </label>
+      <label class="toggle-item">
+        <div class="toggle-label">
+          <strong>Don't Modify Bytecode</strong>
+          Keep bytecode intact
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="opt-dontModifyBytecode">
+          <span class="slider"></span>
+        </label>
+      </label>
+      <label class="toggle-item">
+        <div class="toggle-label">
+          <strong>Don't Add Anti-tamper</strong>
+          Skip tamper checks
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="opt-dontAddAntitamper">
+          <span class="slider"></span>
+        </label>
+      </label>
+      <div class="select-item">
+        <span class="select-label"><i class="fa-solid fa-code"></i> Generator</span>
+        <select id="opt-generator">
+          <option value="Number">Number</option>
+          <option value="String">String</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+        <i class="fa-solid fa-chevron-down" style="font-size:10px;color:var(--text-faint);"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- editor grid -->
+  <div class="editor-grid">
+
+    <!-- INPUT PANEL -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <!-- upload zone -->
+      <div class="upload-zone" id="upload-zone">
+        <i class="fa-solid fa-file-arrow-up"></i>
+        <div class="upload-text">
+          <span id="upload-label">Drop a .lua file or click to browse</span>
+          <small>Supports .lua and .txt files</small>
+        </div>
+        <div id="file-badge"></div>
+        <input type="file" id="file-input" accept=".lua,.txt">
+      </div>
+
+      <div class="panel" style="flex:1;">
+        <div class="panel-header">
+          <div class="panel-title"><i class="fa-solid fa-file-code"></i> <span>Input</span> &nbsp;— Lua Source</div>
+          <div class="panel-actions">
+            <button class="icon-btn" id="btn-clear-input" title="Clear input"><i class="fa-solid fa-trash"></i></button>
+            <button class="icon-btn" id="btn-paste" title="Paste from clipboard"><i class="fa-solid fa-clipboard"></i></button>
+          </div>
+        </div>
+        <div class="editor-wrap">
+          <div class="line-nums" id="line-nums">1</div>
+          <textarea
+            class="code-area"
+            id="code-input"
+            placeholder="-- Paste your Lua script here…&#10;&#10;local Player = game.Players.LocalPlayer&#10;print('Hello, ' .. Player.Name)"
+            spellcheck="false"
+            autocorrect="off"
+            autocapitalize="off"
+          ></textarea>
+        </div>
+        <div class="status-bar">
+          <span class="status-dot" id="input-dot"></span>
+          <span id="input-status">Ready</span>
+          <span class="status-right"><span class="char-count" id="char-count">0 chars</span></span>
+        </div>
+      </div>
+
+      <button class="encrypt-btn" id="btn-encrypt">
+        <div class="btn-spinner"><div class="spinner-ring"></div></div>
+        <span class="btn-text"><i class="fa-solid fa-lock"></i> &nbsp;Encrypt Script</span>
+      </button>
+    </div>
+
+    <!-- OUTPUT PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><i class="fa-solid fa-shield-halved"></i> <span>Output</span> &nbsp;— Encrypted</div>
+        <div class="panel-actions">
+          <button class="icon-btn" id="btn-copy" title="Copy output" style="display:none;"><i class="fa-regular fa-copy"></i></button>
+          <button class="icon-btn" id="btn-clear-output" title="Clear output" style="display:none;"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+      <div id="output-wrap">
+        <div class="output-placeholder" id="output-placeholder">
+          <i class="fa-solid fa-lock-open"></i>
+          <div style="text-align:center;">
+            <div style="margin-bottom:4px;">Output will appear here</div>
+            <div style="font-size:12px;color:var(--text-faint);">Paste your script and click Encrypt</div>
+          </div>
+        </div>
+        <pre class="output-pre" id="output-pre" style="display:none;"></pre>
+      </div>
+      <div class="status-bar" id="output-status-bar">
+        <span class="status-dot" id="output-dot"></span>
+        <span id="output-status">Waiting…</span>
+        <span class="status-right"><span class="char-count" id="out-char-count"></span></span>
+      </div>
+      <div class="download-row" id="download-row" style="display:none;">
+        <i class="fa-solid fa-file-code" style="color:var(--text-faint);font-size:14px;"></i>
+        <span class="download-name" id="download-name">encrypted.lua</span>
+        <button class="download-btn" id="btn-download"><i class="fa-solid fa-download"></i> Download</button>
+      </div>
+    </div>
+
+  </div><!-- /editor-grid -->
+</main>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <span>© 2026 Zeox.xyz — All rights reserved</span>
+  <div class="foot-links">
+    <a href="index.html">Home</a>
+    <a href="index.html#pricing">Pricing</a>
+    <a href="index.html#faq">FAQ</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  const HEADER_COMMENT = "--Protected by Zeox Obfuscator\n-- https://zeox.xyz\n";
+  const API_URL = "https://goofyscator.lua.cz/obfuscate";
+
+  // ── element refs ──
+  const codeInput       = document.getElementById("code-input");
+  const lineNums        = document.getElementById("line-nums");
+  const charCount       = document.getElementById("char-count");
+  const inputDot        = document.getElementById("input-dot");
+  const inputStatus     = document.getElementById("input-status");
+  const outputPre       = document.getElementById("output-pre");
+  const outputPH        = document.getElementById("output-placeholder");
+  const outputDot       = document.getElementById("output-dot");
+  const outputStatus    = document.getElementById("output-status");
+  const outCharCount    = document.getElementById("out-char-count");
+  const downloadRow     = document.getElementById("download-row");
+  const downloadName    = document.getElementById("download-name");
+  const btnEncrypt      = document.getElementById("btn-encrypt");
+  const btnCopy         = document.getElementById("btn-copy");
+  const btnClearOutput  = document.getElementById("btn-clear-output");
+  const btnClearInput   = document.getElementById("btn-clear-input");
+  const btnPaste        = document.getElementById("btn-paste");
+  const btnDownload     = document.getElementById("btn-download");
+  const alertZone       = document.getElementById("alert-zone");
+  const fileInput       = document.getElementById("file-input");
+  const uploadZone      = document.getElementById("upload-zone");
+  const uploadLabel     = document.getElementById("upload-label");
+  const fileBadge       = document.getElementById("file-badge");
+
+  // settings
+  const optEncodeNumbers       = document.getElementById("opt-encodeNumbers");
+  const optRenameGlobals       = document.getElementById("opt-renameGlobals");
+  const optDontModifyBytecode  = document.getElementById("opt-dontModifyBytecode");
+  const optDontAddAntitamper   = document.getElementById("opt-dontAddAntitamper");
+  const optGenerator           = document.getElementById("opt-generator");
+
+  let currentOutput   = "";
+  let currentFilename = "encrypted.lua";
+
+  // ── line numbers ──
+  function updateLineNums() {
+    const lines = (codeInput.value || "").split("\n").length;
+    lineNums.textContent = Array.from({length: lines}, (_, i) => i + 1).join("\n");
+    charCount.textContent = codeInput.value.length.toLocaleString() + " chars";
+    inputDot.className = "status-dot" + (codeInput.value.trim() ? " ok" : "");
+    inputStatus.textContent = codeInput.value.trim() ? "Script loaded" : "Ready";
+  }
+  codeInput.addEventListener("input", updateLineNums);
+  codeInput.addEventListener("scroll", () => { lineNums.scrollTop = codeInput.scrollTop; });
+  updateLineNums();
+
+  // ── sync line-nums scroll ──
+  codeInput.addEventListener("keydown", e => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const s = codeInput.selectionStart, en = codeInput.selectionEnd;
+      codeInput.value = codeInput.value.substring(0, s) + "  " + codeInput.value.substring(en);
+      codeInput.selectionStart = codeInput.selectionEnd = s + 2;
+      updateLineNums();
+    }
+  });
+
+  // ── clear buttons ──
+  btnClearInput.addEventListener("click", () => {
+    codeInput.value = "";
+    updateLineNums();
+    clearFileBadge();
+  });
+  btnClearOutput.addEventListener("click", clearOutput);
+
+  // ── paste ──
+  btnPaste.addEventListener("click", async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      codeInput.value = text;
+      updateLineNums();
+    } catch { showAlert("err", "Clipboard access denied. Paste manually with Ctrl+V."); }
+  });
+
+  // ── copy output ──
+  btnCopy.addEventListener("click", () => {
+    if (!currentOutput) return;
+    navigator.clipboard.writeText(currentOutput).then(() => {
+      const icon = btnCopy.querySelector("i");
+      icon.className = "fa-solid fa-check";
+      setTimeout(() => { icon.className = "fa-regular fa-copy"; }, 1400);
+    });
+  });
+
+  // ── file upload ──
+  uploadZone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+  uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag"); });
+  uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag"));
+  uploadZone.addEventListener("drop", e => {
+    e.preventDefault();
+    uploadZone.classList.remove("drag");
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!file.name.match(/\.(lua|txt)$/i)) {
+      showAlert("err", "Only .lua and .txt files are supported.");
+      return;
+    }
+    const r = new FileReader();
+    r.onload = ev => {
+      codeInput.value = ev.target.result;
+      updateLineNums();
+      currentFilename = file.name.replace(/\.[^.]+$/, "") + "_encrypted.lua";
+      uploadLabel.textContent = "File loaded";
+      fileBadge.innerHTML = `<span class="file-tag"><i class="fa-solid fa-file-code"></i> ${escHtml(file.name)} <span class="rm" id="rm-file"><i class="fa-solid fa-xmark"></i></span></span>`;
+      document.getElementById("rm-file").addEventListener("click", e => { e.stopPropagation(); clearFileBadge(); codeInput.value = ""; updateLineNums(); });
+    };
+    r.readAsText(file);
+  }
+  function clearFileBadge() {
+    fileBadge.innerHTML = "";
+    uploadLabel.textContent = "Drop a .lua file or click to browse";
+    currentFilename = "encrypted.lua";
+    fileInput.value = "";
+  }
+
+  // ── encrypt ──
+  btnEncrypt.addEventListener("click", encrypt);
+
+  async function encrypt() {
+    const source = codeInput.value.trim();
+    if (!source) {
+      showAlert("err", "Please paste or upload a Lua script first.");
+      return;
+    }
+
+    clearAlert();
+    setEncryptLoading(true);
+    setOutputBusy();
+
+    const payload = {
+      source,
+      settings: {
+        dontModifyBytecode: optDontModifyBytecode.checked,
+        dontAddAntitamper:  optDontAddAntitamper.checked,
+        encodeNumbers:      optEncodeNumbers.checked,
+        renameGlobals:      optRenameGlobals.checked,
+        generator:          optGenerator.value
+      }
+    };
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        let errMsg = `API error: ${res.status} ${res.statusText}`;
+        try { const j = await res.json(); if (j.error || j.message) errMsg = j.error || j.message; } catch {}
+        throw new Error(errMsg);
+      }
+
+      const data = await res.json();
+
+      // extract obfuscated code — try common keys
+      let code = data.code || data.result || data.output || data.obfuscated || data.source || "";
+      if (typeof code !== "string" || !code.trim()) {
+        throw new Error("API returned an empty or unexpected response.");
+      }
+
+      // remove first line and prepend Zeox header
+      const lines = code.split("\n");
+      lines.shift(); // remove first line
+      const finalCode = HEADER_COMMENT + lines.join("\n");
+
+      setOutput(finalCode);
+      showAlert("ok", "Script encrypted successfully!");
+
+    } catch (err) {
+      setOutputError(err.message || "Encryption failed. Check your connection and try again.");
+      showAlert("err", err.message || "Encryption failed.");
+    } finally {
+      setEncryptLoading(false);
+    }
+  }
+
+  // ── download ──
+  btnDownload.addEventListener("click", () => {
+    if (!currentOutput) return;
+    const blob = new Blob([currentOutput], { type: "text/plain" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = currentFilename;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // ── state helpers ──
+  function setEncryptLoading(on) {
+    btnEncrypt.disabled = on;
+    btnEncrypt.classList.toggle("loading", on);
+  }
+
+  function setOutputBusy() {
+    outputPH.style.display = "none";
+    outputPre.style.display = "none";
+    outputDot.className = "status-dot busy";
+    outputStatus.textContent = "Encrypting…";
+    outCharCount.textContent = "";
+    downloadRow.style.display = "none";
+    btnCopy.style.display = "none";
+    btnClearOutput.style.display = "none";
+  }
+
+  function setOutput(code) {
+    currentOutput = code;
+    outputPH.style.display = "none";
+    outputPre.style.display = "block";
+    outputPre.textContent = code;
+    outputDot.className = "status-dot ok";
+    outputStatus.textContent = "Encrypted";
+    outCharCount.textContent = code.length.toLocaleString() + " chars";
+    downloadRow.style.display = "flex";
+    downloadName.textContent = currentFilename;
+    btnCopy.style.display = "flex";
+    btnClearOutput.style.display = "flex";
+  }
+
+  function setOutputError(msg) {
+    outputPH.style.display = "flex";
+    outputPH.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color:var(--red);"></i><div style="text-align:center;font-size:13px;color:#ff8f8f;">${escHtml(msg)}</div>`;
+    outputPre.style.display = "none";
+    outputDot.className = "status-dot err";
+    outputStatus.textContent = "Failed";
+    outCharCount.textContent = "";
+    downloadRow.style.display = "none";
+  }
+
+  function clearOutput() {
+    currentOutput = "";
+    outputPH.innerHTML = `<i class="fa-solid fa-lock-open"></i><div style="text-align:center;"><div style="margin-bottom:4px;">Output will appear here</div><div style="font-size:12px;color:var(--text-faint);">Paste your script and click Encrypt</div></div>`;
+    outputPH.style.display = "flex";
+    outputPre.style.display = "none";
+    outputPre.textContent = "";
+    outputDot.className = "status-dot";
+    outputStatus.textContent = "Waiting…";
+    outCharCount.textContent = "";
+    downloadRow.style.display = "none";
+    btnCopy.style.display = "none";
+    btnClearOutput.style.display = "none";
+    clearAlert();
+  }
+
+  // ── alerts ──
+  function showAlert(type, msg) {
+    const icon = type === "ok" ? "fa-circle-check" : "fa-circle-exclamation";
+    alertZone.innerHTML = `<div class="alert alert-${type}"><i class="fa-solid ${icon}"></i><span>${escHtml(msg)}</span></div>`;
+  }
+  function clearAlert() { alertZone.innerHTML = ""; }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+})();
+</script>
+</body>
+</html>
